@@ -1,0 +1,18 @@
+{
+  "accessory": {
+    "name": "Garage Door",
+    "username": "C1:5D:3F:EE:5E:FB",
+    "pincode": "031-45-154",
+    "port": 51826
+  },
+
+  "opener": {
+    "manufacturer": "Manufacturer",
+    "model": "Model",
+    "serialNumber": "Serial Number"
+  },
+
+  "controller": {
+    "togglePin": 11
+  }
+}
