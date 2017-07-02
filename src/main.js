@@ -1,77 +1,88 @@
 import { Accessory, Service, Characteristic, uuid } from 'hap-nodejs';
 import storage from 'node-persist';
-import garageController from './garage';
+import doorController from './door';
 import config from '../config.json';
+import Camera from './camera';
 const debug = require('debug')('controller:main');
 
-if (!config.accessory.username) {
-  throw new Error(`Username not found on accessory '${garageAccessory.displayName}'. Core.js requires all accessories to define a unique 'username' property.`);
-}
+storage.initSync();
 
-if (!config.accessory.pincode) {
-  throw new Error(`Pincode not found on accessory '${garageAccessory.displayName}'. Core.js requires all accessories to define a 'pincode' property.`);
-}
+debug(`accessory name: ${config.door.accessory.name}`);
+debug(`accessory username: ${config.door.accessory.username}`);
+debug(`accessory pincode: ${config.door.accessory.pincode}`);
+debug(`accessory port: ${config.door.accessory.port}`);
 
-debug(`accessory name: ${config.accessory.name}`);
-debug(`accessory username: ${config.accessory.username}`);
-debug(`accessory pincode: ${config.accessory.pincode}`);
-debug(`accessory port: ${config.accessory.port}`);
+debug(`camera name: ${config.camera.accessory.name}`);
+debug(`camera username: ${config.camera.accessory.username}`);
+debug(`camera pincode: ${config.camera.accessory.pincode}`);
+debug(`camera port: ${config.camera.accessory.port}`);
 
-var garageUUID = uuid.generate(`hap-nodejs:accessories:${config.accessory.name}`);
-var garageAccessory = exports.accessory = new Accessory(config.accessory.name, garageUUID);
+const doorUUID = uuid.generate(`hap-nodejs:accessories:${config.door.accessory.name}`);
+const doorAccessory = exports.accessory = new Accessory(config.door.accessory.name, doorUUID);
 
-garageAccessory.username = config.accessory.username;
-garageAccessory.pincode = config.accessory.pincode;
 
-garageAccessory
+const cameraSource = new Camera();
+
+const cameraUUID = uuid.generate(`hap-nodejs:accessories:${config.camera.accessory.name}`);
+const cameraAccessory = exports.camera = new Accessory(config.camera.accessory.name, cameraUUID);
+
+// doorAccessory.pincode = config.door.accessory.pincode;
+// doorAccessory.username = config.door.accessory.username;
+
+// cameraAccessory.pincode = config.camera.accessory.pincode;
+// cameraAccessory.username = config.camera.accessory.username;
+
+// Garage Accessory
+
+doorAccessory
   .getService(Service.AccessoryInformation)
-  .setCharacteristic(Characteristic.Manufacturer, config.opener.manufacturer)
-  .setCharacteristic(Characteristic.Model, config.opener.model)
-  .setCharacteristic(Characteristic.SerialNumber, config.opener.serialNumber);
+  .setCharacteristic(Characteristic.Manufacturer, 'Manufacturer')
+  .setCharacteristic(Characteristic.Model, 'Model')
+  .setCharacteristic(Characteristic.SerialNumber, 'Serial Number');
 
-garageAccessory.on('identify', function (paired, callback) {
-  garageController.identify();
+doorAccessory.on('identify', function (paired, callback) {
+  doorController.identify();
 
   callback();
 });
 
-garageAccessory
+doorAccessory
   .addService(Service.GarageDoorOpener, 'Garage Door')
   .setCharacteristic(Characteristic.TargetDoorState, Characteristic.TargetDoorState.CLOSED) // force initial state to CLOSED
   .getCharacteristic(Characteristic.TargetDoorState)
   .on('set', function(value, callback) {
 
     if (value == Characteristic.TargetDoorState.CLOSED) {
-      garageController.openDoor();
+      doorController.openDoor();
 
       callback();
 
-      garageAccessory
+      doorAccessory
         .getService(Service.GarageDoorOpener)
         .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.CLOSED);
     }
     else if (value == Characteristic.TargetDoorState.OPEN) {
-      garageController.closeDoor();
+      doorController.closeDoor();
 
       callback();
 
-      garageAccessory
+      doorAccessory
         .getService(Service.GarageDoorOpener)
         .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.OPEN);
     }
   });
 
 
-garageAccessory
+doorAccessory
   .getService(Service.GarageDoorOpener)
   .getCharacteristic(Characteristic.CurrentDoorState)
   .on('get', function(callback) {
 
-    var err = null;
+    let err = null;
 
-    garageController.doorStatus();
+    doorController.doorStatus();
 
-    if (garageController.isDoorOpened) {
+    if (doorController.isDoorOpened) {
       callback(err, Characteristic.CurrentDoorState.OPEN);
     } else {
       callback(err, Characteristic.CurrentDoorState.CLOSED);
@@ -79,12 +90,27 @@ garageAccessory
   });
 
 
-storage.initSync();
+cameraAccessory.configureCameraSource(cameraSource);
 
-debug('publish');
-garageAccessory.publish({
-  port: config.accessory.port,
-  username: config.accessory.username,
-  pincode: config.accessory.pincode,
+cameraAccessory.identify, (paired, callback) => {
+  console.log('Node Camera Identify');
+  callback();
+}
+
+debug('publish door accessory');
+doorAccessory.publish({
+  port: config.door.accessory.port,
+  username: config.door.accessory.username,
+  pincode: config.door.accessory.pincode,
   category: Accessory.Categories.GARAGE_DOOR_OPENER,
 });
+
+
+debug('publish camera accessory');
+cameraAccessory.publish({
+  port: config.camera.accessory.port,
+  username: config.camera.accessory.username,
+  pincode: config.camera.accessory.pincode,
+  category: Accessory.Categories.CAMERA,
+});
+

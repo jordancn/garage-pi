@@ -1,43 +1,39 @@
-import gpio from 'rpi-gpio';
-import config from '../config.json';
+import Switch from './switch';
+
 const debug = require('debug')('controller:door');
 
-const togglePin = config.controller.togglePin;
+const door = {
+  opened: false,
 
-gpio.setMode(gpio.MODE_RPI);
+  openDoor: function() {
+    debug('openDoor');
 
-const timeout = async (ms) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+    Switch.toggle();
 
-const toggle = async () => {
-  try {
-    // setup
-    debug(`setup GPIO pin ${togglePin}`);
-    const setupError = await gpio.setup(togglePin, gpio.DIR_OUT);
+    door.opened = true;
+  },
 
-    // toggle on
-    debug('toggle button on');
-    const toggleOnError = await gpio.write(togglePin, 1);
+  closeDoor: function () {
+    debug('closeDoor');
 
-    // timeout: 500 ms
-    debug('timeout 500 ms');
-    await timeout(500);
+    Switch.toggle();
 
-    // toggle off
-    debug('toggle button off');
-    const toggleOffError = await gpio.write(togglePin, 0);
+    door.opened = false;
+  },
 
-    // timeout: 1000 ms
-    debug('timeout 1000 ms');
-    await timeout(1000);
+  identify: function () {
+    debug('identify');
+  },
 
-    // unexport the pin
-    debug(`unexport GPIO pin ${togglePin}`);
-    const unexportError = await gpio.unexportPin(togglePin);
-  } catch (errors) {
-    console.error(errors);
+  doorStatus: function () {
+    debug('doorStatus');
+  },
+
+  isDoorOpened: function () {
+    debug('isDoorOpened', door.opened);
+
+    return door.opened;
   }
-}
+};
 
-export default { toggle }
+export default door;

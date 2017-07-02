@@ -1,18 +1,32 @@
 {
-  "accessory": {
-    "name": "Garage Door",
-    "username": "C1:5D:3F:EE:5E:FB",
-    "pincode": "031-45-154",
-    "port": 51826
+  "door": {
+    "accessory": {
+      "name": "Garage Door",
+      "username": "01:23:45:67:89:AB",
+      "pincode": "876-54-321",
+      "port": 51826
+    },
+    "pins": {
+      "toggle": 11
+    }
   },
 
-  "opener": {
-    "manufacturer": "Manufacturer",
-    "model": "Model",
-    "serialNumber": "Serial Number"
-  },
-
-  "controller": {
-    "togglePin": 11
+  "camera": {
+    "accessory": {
+      "name": "Garage Camera",
+      "username": "BA:98:76:54:32:10",
+      "pincode": "123-45-678",
+      "port": 51062
+    },
+    "snapshot": {
+      "rotation": 180
+    },
+    "stream": {
+      "width": 640,
+      "height": 400,
+      "fps": 15,
+      "bitrate": 100,
+      "rotation": 180
+    }
   }
 }

@@ -16,6 +16,8 @@
     "babel-preset-es2015": "^6.24.1",
     "debug": "^2.6.6",
     "hap-nodejs": "^0.4.25",
-    "rpi-gpio": "https://github.com/jordancn/rpi-gpio.js.git"
+    "rpi-gpio": "https://github.com/jordancn/rpi-gpio.js.git",
+    "shelljs": "^0.7.8",
+    "temp": "^0.8.3"
   }
 }
