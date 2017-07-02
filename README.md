@@ -1,4 +1,7 @@
-Based on:
+# Raspberry Pi HomeKit Garage Door Controller + Cam
 
-https://github.com/Didel/HomeKitCam
+## Acknowledgements
+Camera code based on [HomeKitCam](https://github.com/Didel/HomeKitCam)
 
+## License
+MIT

@@ -26,13 +26,7 @@ const cameraSource = new Camera();
 const cameraUUID = uuid.generate(`hap-nodejs:accessories:${config.camera.accessory.name}`);
 const cameraAccessory = exports.camera = new Accessory(config.camera.accessory.name, cameraUUID);
 
-// doorAccessory.pincode = config.door.accessory.pincode;
-// doorAccessory.username = config.door.accessory.username;
-
-// cameraAccessory.pincode = config.camera.accessory.pincode;
-// cameraAccessory.username = config.camera.accessory.username;
-
-// Garage Accessory
+// Door Accessory
 
 doorAccessory
   .getService(Service.AccessoryInformation)
@@ -89,11 +83,11 @@ doorAccessory
     }
   });
 
+// Camera Accessory
 
 cameraAccessory.configureCameraSource(cameraSource);
 
 cameraAccessory.identify, (paired, callback) => {
-  console.log('Node Camera Identify');
   callback();
 }
 
