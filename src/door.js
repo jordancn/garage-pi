@@ -1,38 +1,33 @@
 import Switch from './switch';
+import Sensor from './sensor';
 
 const debug = require('debug')('controller:door');
 
 const door = {
-  opened: false,
-
-  openDoor: function() {
+  openDoor: async function() {
     debug('openDoor');
 
     Switch.toggle();
-
-    door.opened = true;
   },
 
-  closeDoor: function () {
+  closeDoor: async function () {
     debug('closeDoor');
 
     Switch.toggle();
-
-    door.opened = false;
   },
 
   identify: function () {
     debug('identify');
   },
 
-  doorStatus: function () {
-    debug('doorStatus');
-  },
+  isDoorOpened: async function () {
+    debug('isDoorOpened');
 
-  isDoorOpened: function () {
-    debug('isDoorOpened', door.opened);
+    const closed = await Sensor.isDoorClosed();
 
-    return door.opened;
+    debug('isDoorOpened', !closed);
+
+    return !closed;
   }
 };
 

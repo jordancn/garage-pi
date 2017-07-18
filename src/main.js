@@ -17,94 +17,118 @@ debug(`camera username: ${config.camera.accessory.username}`);
 debug(`camera pincode: ${config.camera.accessory.pincode}`);
 debug(`camera port: ${config.camera.accessory.port}`);
 
-const doorUUID = uuid.generate(`hap-nodejs:accessories:${config.door.accessory.name}`);
-const doorAccessory = exports.accessory = new Accessory(config.door.accessory.name, doorUUID);
+async function controller() {
+  const doorUUID = uuid.generate(`hap-nodejs:accessories:${config.door.accessory.name}`);
+  const doorAccessory = exports.accessory = new Accessory(config.door.accessory.name, doorUUID);
 
 
-const cameraSource = new Camera();
+  const cameraSource = new Camera();
 
-const cameraUUID = uuid.generate(`hap-nodejs:accessories:${config.camera.accessory.name}`);
-const cameraAccessory = exports.camera = new Accessory(config.camera.accessory.name, cameraUUID);
+  const cameraUUID = uuid.generate(`hap-nodejs:accessories:${config.camera.accessory.name}`);
+  const cameraAccessory = exports.camera = new Accessory(config.camera.accessory.name, cameraUUID);
 
-// Door Accessory
+  // Door Accessory
 
-doorAccessory
-  .getService(Service.AccessoryInformation)
-  .setCharacteristic(Characteristic.Manufacturer, 'Manufacturer')
-  .setCharacteristic(Characteristic.Model, 'Model')
-  .setCharacteristic(Characteristic.SerialNumber, 'Serial Number');
+  doorAccessory
+    .getService(Service.AccessoryInformation)
+    .setCharacteristic(Characteristic.Manufacturer, 'Manufacturer')
+    .setCharacteristic(Characteristic.Model, 'Model')
+    .setCharacteristic(Characteristic.SerialNumber, 'Serial Number');
 
-doorAccessory.on('identify', function (paired, callback) {
-  doorController.identify();
+  doorAccessory.on('identify', function (paired, callback) {
+    doorController.identify();
 
-  callback();
-});
+    callback();
+  });
 
-doorAccessory
-  .addService(Service.GarageDoorOpener, 'Garage Door')
-  .setCharacteristic(Characteristic.TargetDoorState, Characteristic.TargetDoorState.CLOSED) // force initial state to CLOSED
-  .getCharacteristic(Characteristic.TargetDoorState)
-  .on('set', function(value, callback) {
+  const doorState = () => doorController.isDoorOpened()
+    ? Characteristic.TargetDoorState.OPEN
+    : Characteristic.TargetDoorState.CLOSED;
 
-    if (value == Characteristic.TargetDoorState.CLOSED) {
-      doorController.openDoor();
+  const initialDoorState = await doorState();
 
-      callback();
+  debug('initial door state', initialDoorState);
 
-      doorAccessory
-        .getService(Service.GarageDoorOpener)
-        .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.CLOSED);
-    }
-    else if (value == Characteristic.TargetDoorState.OPEN) {
-      doorController.closeDoor();
+  doorAccessory
+    .addService(Service.GarageDoorOpener, 'Garage Door')
+    .setCharacteristic(Characteristic.TargetDoorState, initialDoorState)
+    .getCharacteristic(Characteristic.TargetDoorState)
+    .on('set', async function(value, callback) {
 
-      callback();
+      if (value == Characteristic.TargetDoorState.CLOSED) {
+        doorAccessory
+          .getService(Service.GarageDoorOpener)
+          .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.CLOSING);
 
-      doorAccessory
-        .getService(Service.GarageDoorOpener)
-        .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.OPEN);
-    }
+        callback();
+
+        await doorController.openDoor();
+
+        const doorState = await doorState();
+
+
+        doorAccessory
+          .getService(Service.GarageDoorOpener)
+          .setCharacteristic(Characteristic.CurrentDoorState, doorStaet);
+      }
+      else if (value == Characteristic.TargetDoorState.OPEN) {
+        doorAccessory
+          .getService(Service.GarageDoorOpener)
+          .setCharacteristic(Characteristic.CurrentDoorState, Characteristic.CurrentDoorState.OPENING);
+
+        callback();
+
+        await doorController.closeDoor();
+
+        const doorState = await doorState();
+
+        doorAccessory
+          .getService(Service.GarageDoorOpener)
+          .setCharacteristic(Characteristic.CurrentDoorState, doorState);
+      }
+    });
+
+
+  doorAccessory
+    .getService(Service.GarageDoorOpener)
+    .getCharacteristic(Characteristic.CurrentDoorState)
+    .on('get', async function(callback) {
+
+      let err = null;
+
+      if (await doorController.isDoorOpened()) {
+        debug('door is open');
+        callback(err, Characteristic.CurrentDoorState.OPEN);
+      } else {
+        debug('door is closed');
+        callback(err, Characteristic.CurrentDoorState.CLOSED);
+      }
+    });
+
+  // Camera Accessory
+
+  cameraAccessory.configureCameraSource(cameraSource);
+
+  cameraAccessory.identify, (paired, callback) => {
+    callback();
+  }
+
+  debug('publish door accessory');
+  doorAccessory.publish({
+    port: config.door.accessory.port,
+    username: config.door.accessory.username,
+    pincode: config.door.accessory.pincode,
+    category: Accessory.Categories.GARAGE_DOOR_OPENER,
   });
 
 
-doorAccessory
-  .getService(Service.GarageDoorOpener)
-  .getCharacteristic(Characteristic.CurrentDoorState)
-  .on('get', function(callback) {
-
-    let err = null;
-
-    doorController.doorStatus();
-
-    if (doorController.isDoorOpened) {
-      callback(err, Characteristic.CurrentDoorState.OPEN);
-    } else {
-      callback(err, Characteristic.CurrentDoorState.CLOSED);
-    }
+  debug('publish camera accessory');
+  cameraAccessory.publish({
+    port: config.camera.accessory.port,
+    username: config.camera.accessory.username,
+    pincode: config.camera.accessory.pincode,
+    category: Accessory.Categories.CAMERA,
   });
-
-// Camera Accessory
-
-cameraAccessory.configureCameraSource(cameraSource);
-
-cameraAccessory.identify, (paired, callback) => {
-  callback();
 }
 
-debug('publish door accessory');
-doorAccessory.publish({
-  port: config.door.accessory.port,
-  username: config.door.accessory.username,
-  pincode: config.door.accessory.pincode,
-  category: Accessory.Categories.GARAGE_DOOR_OPENER,
-});
-
-
-debug('publish camera accessory');
-cameraAccessory.publish({
-  port: config.camera.accessory.port,
-  username: config.camera.accessory.username,
-  pincode: config.camera.accessory.pincode,
-  category: Accessory.Categories.CAMERA,
-});
-
+controller();
